@@ -1,7 +1,23 @@
+/*
+ * Copyright 2005 Joe Walker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.directwebremoting.convert;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -19,6 +35,7 @@ import org.directwebremoting.extend.ProtocolConstants;
  */
 public class DateConverter extends AbstractConverter
 {
+
     /* (non-Javadoc)
      * @see org.directwebremoting.Converter#convertInbound(java.lang.Class, org.directwebremoting.InboundVariable, org.directwebremoting.InboundContext)
      */
@@ -42,7 +59,63 @@ public class DateConverter extends AbstractConverter
             long millis = 0;
             if (value.length() > 0)
             {
-                millis = Long.parseLong(value);
+
+                value = value.replace("%20", " ");
+                value = value.replace("%3A", ":");
+
+                if(value.length() == 23 && !value.contains("T")){
+                    try{
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                        Date time = dateFormat.parse(value);
+                        millis = time.getTime();
+                    }catch (Exception e){
+
+                    }
+                }
+
+                if(value.length() == 23 && value.contains("T")){
+                    try{
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                        Date time = dateFormat.parse(value);
+                        millis = time.getTime();
+                    }catch (Exception e){
+
+                    }
+                }
+
+                if(value.length() == 19){
+                    try{
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Date time = dateFormat.parse(value);
+                        millis = time.getTime();
+                    }catch (Exception e){
+
+                    }
+                }
+
+                if(value.length() == 17){
+                    try{
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HHmmss");
+                        Date time = dateFormat.parse(value);
+                        millis = time.getTime();
+                    }catch (Exception e){
+
+                    }
+                }
+
+                if(value.length() == 21){
+                    try{
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HHmmss.SSS");
+                        Date time = dateFormat.parse(value);
+                        millis = time.getTime();
+                    }catch (Exception e){
+
+                    }
+                }
+
+                if(millis == 0) {
+                    millis = Long.parseLong(value);
+                }
             }
 
             Date date = new Date(millis);
@@ -88,6 +161,7 @@ public class DateConverter extends AbstractConverter
      */
     public OutboundVariable convertOutbound(Object data, OutboundContext outctx) throws ConversionException
     {
+
         long millis;
 
         if (data instanceof Calendar)
@@ -103,6 +177,11 @@ public class DateConverter extends AbstractConverter
         else
         {
             throw new ConversionException(data.getClass());
+        }
+
+        if(outctx.isJsonMode()) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            return new NonNestedOutboundVariable("\"" + dateFormat.format(new Date(millis)) + "\"");
         }
 
         return new NonNestedOutboundVariable("new Date(" + millis + ")");
